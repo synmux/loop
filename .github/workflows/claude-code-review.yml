@@ -15,33 +15,29 @@ permissions:
   id-token: write
 jobs:
   claude-review:
-    # Fork PRs get no secrets and the action refuses actors without write
-    # access, so they would only ever produce a failed run.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Only review pull requests opened by someone with write access, from a
+    # branch in this repo: fork PRs get no secrets, so they could only fail.
+    # shortcut: OWNER/COLLABORATOR means write only on a personal-account repo;
+    # if the repo moves to an org, check the collaborator permission API instead.
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["OWNER", "COLLABORATOR"]'), github.event.pull_request.author_association)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # The action only accepts a marketplace as a bare .git URL (no ref) or a
-      # local path, so check the marketplace out at a pinned commit instead.
-      - name: Checkout pinned plugin marketplace
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: anthropics/claude-code
-          ref: 2301018b1f61073c501a8e7a4813ef48c239163b
-          path: .claude-code-marketplace
-          fetch-depth: 1
-          persist-credentials: false
+
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1.0.248
+        uses: anthropics/claude-code-action@ae68417a745a5df4b2124873632bd73a2255e6f6 # v1.0.259
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: ${{ github.workspace }}/.claude-code-marketplace
+          # cannot be pinned :( workflow needs it to end in .git though CC accepts #ref
+          plugin_marketplaces: https://github.com/anthropics/claude-code.git
           plugins: code-review@claude-code-plugins
-          prompt: /code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
-          claude_args: --allowedTools mcp__github_inline_comment__create_inline_comment
+          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          claude_args: --allowedTools "mcp__github_inline_comment__create_inline_comment"
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
