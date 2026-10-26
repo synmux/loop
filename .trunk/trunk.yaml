@@ -6,17 +6,20 @@ cli:
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
-    - node@18.12.1
-    - python@3.10.8
+    - node@22.16.0
+    - python@3.14.4
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
+  disabled:
+    - pinact
   enabled:
-    - checkov@3.2.500
+    - actionlint@1.7.12
+    - checkov@3.3.30
     - git-diff-check
-    - markdownlint@0.47.0
-    - prettier@3.8.1
-    - trivy@0.37.1
-    - trufflehog@3.31.3
+    - markdownlint@0.50.0
+    - prettier@3.9.10
+    - trivy@0.76.1
+    - trufflehog@3.99.7
     - yamllint@1.38.0
 actions:
   enabled:
@@ -25,3 +28,8 @@ actions:
     - trunk-check-pre-push
     - trunk-fmt-pre-commit
     - trunk-upgrade-available
+plugins:
+  sources:
+    - id: trunk
+      ref: v1.11.0
+      uri: https://github.com/trunk-io/plugins
